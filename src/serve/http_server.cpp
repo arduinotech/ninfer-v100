@@ -261,23 +261,27 @@ void HttpServer::record_request_start(const RequestLogContext& context) {
 }
 
 void HttpServer::record_request_rejected(const RequestRejectionLogContext& context) {
+    metrics_.rejected();
     request_jsonl_.write_request_rejected(context);
     operational_log_.request_rejected(context);
 }
 
 void HttpServer::record_request_done(const RequestLogContext& context,
                                      const GenerationOutcome& outcome) {
+    metrics_.done(outcome);
     request_jsonl_.write_request_done(context, outcome);
     operational_log_.request_done(context, outcome);
 }
 
 void HttpServer::record_request_failure(const RequestLogContext& context,
                                         const RequestFailure& failure) {
+    metrics_.failed(failure.classification == RequestFailureClass::ClientDisconnected);
     request_jsonl_.write_request_error(context, failure.machine_message);
     operational_log_.request_failure(context, failure);
 }
 
 void HttpServer::record_response_failure(std::uint64_t request_id, const RequestFailure& failure) {
+    metrics_.response_failed();
     operational_log_.response_failure(request_id, failure);
 }
 
@@ -431,6 +435,12 @@ void HttpServer::register_routes() {
         res.set_content(nlohmann::json{{"status", available ? "ok" : "unavailable"}}.dump(),
                         "application/json");
     });
+    server_.Get("/metrics", [this](const httplib::Request&, httplib::Response& res) {
+        const auto stats = service_->runtime_stats();
+        res.set_header("Cache-Control", "no-store");
+        res.set_content(metrics_.render(stats, service_->is_available()),
+                        "text/plain; version=0.0.4; charset=utf-8");
+    });
     server_.Get("/v1/models", [this](const httplib::Request& req, httplib::Response& res) {
         handle_models(req, res);
     });
@@ -506,6 +516,7 @@ void HttpServer::attach(GenerationService& service) {
     const ninfer::LoadSummary load = service.load_summary();
     public_model_id_               = resolve_public_model_id(options_, load.model_id);
     service_                       = &service;
+    metrics_.configure(public_model_id_, service.engine_options(), service.runtime_stats());
     request_jsonl_.write_server_start(options_, service.engine_options(),
                                       service.sampling_defaults(), public_model_id_, load,
                                       service.memory_summary());

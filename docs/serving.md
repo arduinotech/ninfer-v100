@@ -54,6 +54,7 @@ omitted at startup.
 | Method and path | Behavior |
 |---|---|
 | `GET /health` | Engine readiness |
+| `GET /metrics` | Prometheus counters, gauges and latency histograms |
 | `GET /v1/models` | configured OpenAI model alias and effective `max_model_len` |
 | `GET /v1/models/{id}` | lookup of the configured alias and effective `max_model_len` |
 | `POST /v1/chat/completions` | OpenAI-style chat generation |
@@ -68,6 +69,25 @@ omitted at startup.
 `GET /health` returns HTTP 200 with `{"status":"ok"}` while the Engine can accept work. After an
 Engine-wide failure it returns HTTP 503 with `{"status":"unavailable"}`. Temporary queue
 saturation does not make the Engine unavailable. The endpoint remains unauthenticated.
+
+`GET /metrics` serves Prometheus text format 0.0.4 on the same port. It follows the server's
+API-key authentication and works independently of `--request-log-jsonl` and `--stats-interval`.
+Engine failure leaves the endpoint readable with `ninfer_engine_ready 0`. Counters start after
+startup warmup and reset when the server restarts.
+
+| Metrics | Meaning |
+|---|---|
+| `ninfer_model_info`, `ninfer_max_concurrency`, `ninfer_max_context_tokens` | Model/backend identity and startup limits |
+| `ninfer_requests_running`, `waiting`, `prefilling`, `decode_ready`, `materializing`, `capture_pending`, `terminal_pending` | Current Engine gauges; prefill/decode are subsets of resident requests |
+| `ninfer_prefill_tokens_total`, `ninfer_prompt_tokens_cached_total` | Actual initial prefill tokens and tokens supplied by exact prefix reuse |
+| `ninfer_decode_tokens_total`, `ninfer_decode_rounds_total`, `ninfer_decode_row_rounds_total` | Committed decode outputs and decode batch executions |
+| `ninfer_context_selections_total{kind}`, `ninfer_context_historical_fork_hits_total` | Initial binding reuse decisions by checkpoint kind |
+| `ninfer_context_state_{moves,forks,restores}_total`, `ninfer_context_pressure_events_total{event}` | State lifecycle and capacity-pressure reactions |
+| `ninfer_context_transfer_bytes_total{resource,direction}`, `ninfer_context_transfer_pages_total{resource,direction}` | Completed State/KV payload transfers; State transfers report bytes only |
+| `ninfer_host_work_seconds_total{phase}` | Instrumented worker wall time; not CUDA kernel time |
+| `ninfer_spec_decode_{rounds,draft_tokens,accepted_tokens,fallback_steps}_total` | Speculative work aggregated from settled requests, including MTP and DFlash/DFlash2 |
+| `ninfer_requests_total{outcome}`, `ninfer_response_failures_total` | Generation attempts entering preparation and subsequent response failures; protocol/model validation failures and token-count requests are excluded |
+| `ninfer_time_to_first_token_seconds` | Histogram observed once at request settlement, including preparation and queueing |
 
 Every OpenAI-compatible response carries a unique `x-request-id` header, including streaming and
 error responses. Anthropic endpoints use their separate `request-id` contract.

@@ -201,6 +201,9 @@ ninfer_add_test(ninfer_http_error_handler_test
   LIBRARIES ninfer_serve)
 target_include_directories(ninfer_http_error_handler_test PRIVATE
   ${PROJECT_SOURCE_DIR}/third_party/cpp-httplib)
+ninfer_add_test(ninfer_metrics_test
+  SOURCES test_metrics.cpp
+  LIBRARIES ninfer_serve)
 ninfer_add_test(ninfer_http_transport_test
   SOURCES test_http_transport.cpp
   LIBRARIES ninfer_serve)
