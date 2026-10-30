@@ -34,6 +34,7 @@ int main() {
     running.device_main_kv_capacity_pages = 512;
     running.device_backend_kv_capacity_pages = 128;
     running.resident_tokens = 12345;
+    running.cached_tokens   = 12000;
     GenerationOutcome outcome;
     outcome.finish_reason               = FinishReason::OutputLimit;
     outcome.metrics.total_seconds       = 2.0;
@@ -66,7 +67,8 @@ int main() {
               std::string::npos &&
               live.find("ninfer_context_kv_pages_capacity{pool=\"backend\"} 128\n") !=
               std::string::npos &&
-              live.find("ninfer_context_tokens_resident 12345\n") != std::string::npos,
+              live.find("ninfer_context_tokens_resident 12345\n") != std::string::npos &&
+              live.find("ninfer_context_tokens_cached 12000\n") != std::string::npos,
           "pool capacities and resident tokens must be observable");
           "runtime gauges must reflect the current snapshot");
     check(live.find("ninfer_spec_decode_draft_tokens_total 6\n") != std::string::npos &&

@@ -181,7 +181,9 @@ std::string Metrics::render(const RuntimeStats& stats, bool ready) const {
         << "ninfer_context_kv_pages_capacity{pool=\"backend\"} "
         << stats.device_backend_kv_capacity_pages << '\n';
     gauge("context_tokens_resident", stats.resident_tokens,
-          "Logical prompt and generated tokens summed over resident requests.");
+          "Logical tokens of resident requests plus retained context-cache checkpoints.");
+    gauge("context_tokens_cached", stats.cached_tokens,
+          "Logical tokens covered by retained context-cache checkpoints.");
     gauge("context_kv_bytes_host", stats.host_kv_occupied_bytes, "Occupied Host KV bytes.");
     gauge("context_shared_active_references", stats.shared_active_references,
           "Live shared-state references.");

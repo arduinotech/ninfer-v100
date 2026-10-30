@@ -1050,6 +1050,30 @@ public:
         }
     }
 
+    // Logical tokens covered by retained context-cache checkpoints. Checkpoints overlap only
+    // within a single continuation (rewrite shadows the endpoint frontier), so endpoints, shared
+    // prefixes and long anchors are summed as disjoint logical extents.
+    [[nodiscard]] std::uint64_t cached_context_tokens() const noexcept {
+        std::uint64_t tokens = 0;
+        for (const CatalogEntry& entry : catalog_) {
+            if (entry.state == CatalogState::Vacant) { continue; }
+            const ContinuationSummary& summary = entry.summary;
+            if (summary.endpoint) {
+                tokens += summary.endpoint->required_kv.main_frontier;
+            } else if (summary.rewrite) {
+                tokens += summary.rewrite->required_kv.main_frontier;
+            }
+            for (const CheckpointSummary& anchor : summary.long_anchors) {
+                tokens += anchor.required_kv.main_frontier;
+            }
+        }
+        for (const SharedCatalogEntry& entry : shared_catalog_) {
+            if (entry.state == SharedCatalogState::Vacant) { continue; }
+            tokens += entry.summary.checkpoint.required_kv.main_frontier;
+        }
+        return tokens;
+    }
+
     void populate_runtime_stats(Program& program, RuntimeStats& out) const noexcept {
         out.state_moves                        = context_stats_.state_moves;
         out.state_forks                        = context_stats_.state_forks;
