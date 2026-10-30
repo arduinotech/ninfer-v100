@@ -31,6 +31,9 @@ int main() {
     running.decode_rounds += 1;
     running.running_requests     = 1;
     running.device_main_kv_occupied_pages = 7;
+    running.device_main_kv_capacity_pages = 512;
+    running.device_backend_kv_capacity_pages = 128;
+    running.resident_tokens = 12345;
     GenerationOutcome outcome;
     outcome.finish_reason               = FinishReason::OutputLimit;
     outcome.metrics.total_seconds       = 2.0;
@@ -58,6 +61,13 @@ int main() {
           "live counters must exclude the startup warmup baseline");
     check(live.find("ninfer_requests_running 1\n") != std::string::npos &&
               live.find("ninfer_context_kv_pages_main_device 7\n") != std::string::npos,
+          "resident gauges must be observable");
+    check(live.find("ninfer_context_kv_pages_capacity{pool=\"main\"} 512\n") !=
+              std::string::npos &&
+              live.find("ninfer_context_kv_pages_capacity{pool=\"backend\"} 128\n") !=
+              std::string::npos &&
+              live.find("ninfer_context_tokens_resident 12345\n") != std::string::npos,
+          "pool capacities and resident tokens must be observable");
           "runtime gauges must reflect the current snapshot");
     check(live.find("ninfer_spec_decode_draft_tokens_total 6\n") != std::string::npos &&
               live.find("ninfer_spec_decode_accepted_tokens_total 4\n") != std::string::npos,

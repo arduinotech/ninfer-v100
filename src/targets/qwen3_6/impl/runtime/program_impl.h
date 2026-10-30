@@ -9528,12 +9528,18 @@ bool ProgramImplCore::persistent_backfill_safe(
 
 qwen3_6::PhysicalUsageSnapshot ProgramImplCore::physical_usage() const noexcept {
     const detail::PhysicalResources usage = physical_occupancy();
+    std::uint32_t main_capacity    = 0;
+    std::uint32_t backend_capacity = 0;
+    if (text_kv_pages) { main_capacity = text_kv_pages->physical_pool().capacity_pages(); }
+    if (backend_kv_pages) { backend_capacity = backend_kv_pages->physical_pool().capacity_pages(); }
     return qwen3_6::PhysicalUsageSnapshot{
         .resource_revision       = resource_revision_,
         .device_state_slots      = usage.device.state_slots,
         .host_state_slots        = usage.host.state_slots,
         .device_main_kv_pages    = usage.device.main_kv_pages,
         .device_backend_kv_pages = usage.device.backend_kv_pages,
+        .main_kv_capacity_pages  = main_capacity,
+        .backend_kv_capacity_pages = backend_capacity,
         .host_kv_bytes           = usage.host.kv_bytes,
     };
 }

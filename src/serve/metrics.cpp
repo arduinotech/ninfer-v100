@@ -174,6 +174,14 @@ std::string Metrics::render(const RuntimeStats& stats, bool ready) const {
           "Occupied Device Main KV pages.");
     gauge("context_kv_pages_backend_device", stats.device_backend_kv_occupied_pages,
           "Occupied Device Backend KV pages.");
+    header("context_kv_pages_capacity", "gauge",
+           "Total device KV pages per pool, resolved at startup.");
+    out << "ninfer_context_kv_pages_capacity{pool=\"main\"} "
+        << stats.device_main_kv_capacity_pages << '\n'
+        << "ninfer_context_kv_pages_capacity{pool=\"backend\"} "
+        << stats.device_backend_kv_capacity_pages << '\n';
+    gauge("context_tokens_resident", stats.resident_tokens,
+          "Logical prompt and generated tokens summed over resident requests.");
     gauge("context_kv_bytes_host", stats.host_kv_occupied_bytes, "Occupied Host KV bytes.");
     gauge("context_shared_active_references", stats.shared_active_references,
           "Live shared-state references.");

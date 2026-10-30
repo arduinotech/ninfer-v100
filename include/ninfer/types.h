@@ -906,6 +906,11 @@ struct RuntimeStats {
     std::uint32_t host_state_occupied_slots            = 0;
     std::uint32_t device_main_kv_occupied_pages        = 0;
     std::uint32_t device_backend_kv_occupied_pages     = 0;
+    // Static pool capacities in device pages, resolved once at startup.
+    std::uint32_t device_main_kv_capacity_pages        = 0;
+    std::uint32_t device_backend_kv_capacity_pages     = 0;
+    // Logical prompt+generated tokens summed over resident (admitted) requests.
+    std::uint64_t resident_tokens                      = 0;
     std::size_t host_kv_occupied_bytes                 = 0;
     std::uint64_t pressure_private_owners_degraded     = 0;
     std::uint64_t pressure_private_owners_evicted      = 0;
