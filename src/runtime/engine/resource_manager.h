@@ -1063,7 +1063,7 @@ public:
             } else if (summary.rewrite) {
                 tokens += summary.rewrite->required_kv.main_frontier;
             }
-            for (const CheckpointSummary& anchor : summary.long_anchors) {
+            for (const auto& anchor : summary.long_anchors) {
                 tokens += anchor.required_kv.main_frontier;
             }
         }
